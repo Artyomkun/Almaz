@@ -1,0 +1,148 @@
+# Almaz OS - File System Makefile
+# Компилятор: almazc (собственный компилятор)
+
+ASM = almazc
+ASM_FLAGS = -f elf64 -O2
+AR = ar
+AR_FLAGS = rcs
+LD = ld
+LD_FLAGS = -r
+
+# Цели
+TARGET = fs.o
+LIB = libfs.a
+
+# Директории
+SRC_DIR = .
+BUILD_DIR = build
+
+# Исходные файлы
+VFS_SRCS = vfs.alm
+ALMAZFS_SRCS = almazfs.alm
+DEVFS_SRCS = devfs.alm
+PROCFS_SRCS = procfs.alm
+TMPFS_SRCS = tmpfs.alm
+
+# Ext2 поддержка (опционально)
+EXT2_SRCS = ext2/ext2.alm \
+            ext2/ext2_superblock.alm \
+            ext2/ext2_inode.alm \
+            ext2/ext2_dir.alm
+
+# FAT32 поддержка (опционально)
+FAT32_SRCS = fat32/fat32.alm \
+             fat32/fat32_dir.alm \
+             fat32/fat32_file.alm \
+             fat32/fat32_bpb.alm
+
+# Все исходники
+SRCS = $(VFS_SRCS) \
+       $(ALMAZFS_SRCS) \
+       $(DEVFS_SRCS) \
+       $(PROCFS_SRCS) \
+       $(TMPFS_SRCS)
+
+# Опциональные ФС (раскомментировать при необходимости)
+# SRCS += $(EXT2_SRCS)
+# SRCS += $(FAT32_SRCS)
+
+# Объектные файлы
+OBJS = $(SRCS:.alm=.o)
+OBJS := $(addprefix $(BUILD_DIR)/, $(OBJS))
+
+# Цели по умолчанию
+.PHONY: all clean install test
+
+all: $(BUILD_DIR) $(TARGET) $(LIB)
+
+# Создание директории build
+$(BUILD_DIR):
+	mkdir -p $(BUILD_DIR)
+	mkdir -p $(BUILD_DIR)/ext2
+	mkdir -p $(BUILD_DIR)/fat32
+
+# Сборка объектных файлов
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.alm
+	@echo "  ASM    $<"
+	@$(ASM) $(ASM_FLAGS) $< -o $@
+
+# Сборка общей fs.o (для ядра)
+$(TARGET): $(OBJS)
+	@echo "  LD     $@"
+	@$(LD) $(LD_FLAGS) $^ -o $@
+
+# Сборка статической библиотеки (для пользовательских программ)
+$(LIB): $(OBJS)
+	@echo "  AR     $@"
+	@$(AR) $(AR_FLAGS) $@ $^
+
+# Очистка
+clean:
+	@echo "  CLEAN"
+	@rm -rf $(BUILD_DIR) $(TARGET) $(LIB)
+
+# Установка (если нужно)
+install: $(LIB)
+	@cp $(LIB) /usr/lib/
+	@mkdir -p /usr/include/almaz/fs
+	@cp *.h /usr/include/almaz/fs/ 2>/dev/null || true
+
+# Тесты
+test: $(TARGET)
+	@echo "  TEST   файловая система"
+	@./test_fs.sh
+
+# Зависимости
+depend:
+	@$(ASM) -M $(SRCS) > .depend
+
+-include .depend
+
+# Информация
+info:
+	@echo "Almaz OS File System"
+	@echo "===================="
+	@echo "Компилятор: $(ASM)"
+	@echo "Флаги:      $(ASM_FLAGS)"
+	@echo "Файлов:     $(words $(SRCS))"
+	@echo ""
+	@echo "Компоненты:"
+	@echo "  VFS       - $(if $(VFS_SRCS),✅,❌)"
+	@echo "  ALMAZFS   - $(if $(ALMAZFS_SRCS),✅,❌)"
+	@echo "  DEVFS     - $(if $(DEVFS_SRCS),✅,❌)"
+	@echo "  PROCFS    - $(if $(PROCFS_SRCS),✅,❌)"
+	@echo "  TMPFS     - $(if $(TMPFS_SRCS),✅,❌)"
+	@echo "  EXT2      - $(if $(EXT2_SRCS),✅,❌)"
+	@echo "  FAT32     - $(if $(FAT32_SRCS),✅,❌)"
+
+# Для отладки
+debug: ASM_FLAGS += -g
+debug: all
+
+# Для максимальной оптимизации
+release: ASM_FLAGS += -O3 -fomit-frame-pointer
+release: all
+
+# Цели для отдельных компонентов
+vfs: $(BUILD_DIR)/vfs.o
+almazfs: $(BUILD_DIR)/almazfs.o
+devfs: $(BUILD_DIR)/devfs.o
+procfs: $(BUILD_DIR)/procfs.o
+tmpfs: $(BUILD_DIR)/tmpfs.o
+ext2: $(BUILD_DIR)/ext2/ext2.o
+fat32: $(BUILD_DIR)/fat32/fat32.o
+
+# Помощь
+help:
+	@echo "Доступные цели:"
+	@echo "  all       - собрать всё (по умолчанию)"
+	@echo "  clean     - очистить сборку"
+	@echo "  test      - запустить тесты"
+	@echo "  install   - установить библиотеку"
+	@echo "  info      - информация о сборке"
+	@echo "  debug     - сборка с отладкой"
+	@echo "  release   - сборка с оптимизацией"
+	@echo "  vfs       - только VFS"
+	@echo "  almazfs   - только ALMAZFS"
+	@echo "  devfs     - только DEVFS"
+	@echo "  help      - это сообщение"

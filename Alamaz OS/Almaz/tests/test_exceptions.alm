@@ -1,0 +1,9 @@
+func test() {
+  throw 42
+}
+
+try {
+  test()
+} except (Int32 as e) {
+  print "Caught Int32 exception"
+}

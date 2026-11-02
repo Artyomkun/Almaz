@@ -1,0 +1,14 @@
+; keyboard.alm
+; Обработка клавиатуры (PS/2)
+
+func keyboard_init() {
+    // настроить порты
+    outb(0x64, 0xAE)  // включить клавиатуру
+}
+
+func keyboard_handler() {
+    // обработка прерывания
+    scancode = inb(0x60)
+    key = translate_scancode(scancode)
+    push_to_buffer(key)
+}

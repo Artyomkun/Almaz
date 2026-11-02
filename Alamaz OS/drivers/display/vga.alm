@@ -1,0 +1,13 @@
+; vga.alm
+; VGA text mode (80x25)
+
+func vga_init() {
+    vga_buffer = 0xB8000
+    cursor_pos = 0
+}
+
+func vga_putchar(c, color) {
+    vga_buffer[cursor_pos] = c
+    vga_buffer[cursor_pos+1] = color
+    cursor_pos += 2
+}

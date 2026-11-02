@@ -1,0 +1,6 @@
+func test_func() {
+  return 42
+}
+
+int x = test_func()
+print x

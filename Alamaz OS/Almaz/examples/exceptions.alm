@@ -1,0 +1,9 @@
+func test() {
+  throw 42
+}
+
+try {
+  test()
+} catch {
+  print "Caught exception"
+}

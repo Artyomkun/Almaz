@@ -1,0 +1,12 @@
+func hello() {
+  print "Hello, World!"
+}
+
+func add() {
+  return 5 + 3
+}
+
+int result = add()
+print result
+
+hello()
